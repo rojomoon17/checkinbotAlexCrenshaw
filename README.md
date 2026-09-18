@@ -20,6 +20,12 @@ instructor's user id and does two things:
    post's existing comments for one already authored by this bot's own user
    id, so re-running the same day never posts a duplicate.
 
+Optionally, it also sends a phone push notification (via
+[ntfy.sh](https://ntfy.sh)) when a check-in reply actually succeeds or hits
+a real failure - it stays silent for the two routine outcomes (already
+replied today, or a `423` on an old/past check-in), so you're not paged for
+things that need no attention.
+
 `main.py` wires both together and is what the workflow actually runs.
 `practice_hub_client.py` is this project's Practice Hub API client (built on
 the same pattern as Mini Project 1's `client.py`), extended with pagination,
@@ -44,29 +50,47 @@ any of them:
 | `PRACTICE_API_TOKEN` | Secret | your Practice Hub API token |
 | `PRACTICE_API_URL` | Secret | `https://practice.fhsucyber.com` |
 | `INSTRUCTOR_ID` | Variable | the instructor's Practice Hub user id |
+| `NTFY_TOPIC` | Secret (optional) | a private [ntfy.sh](https://ntfy.sh) topic name for push notifications |
 
 **On GitHub** (required for the scheduled workflow): repo -> Settings ->
-Secrets and variables -> Actions -> add all three there (the first two as
-Secrets, `INSTRUCTOR_ID` as a Variable). The workflow reads them as:
+Secrets and variables -> Actions -> add all four there (the first two and
+`NTFY_TOPIC` as Secrets, `INSTRUCTOR_ID` as a Variable). The workflow reads
+them as:
 
 ```yaml
 env:
   PRACTICE_API_TOKEN: ${{ secrets.PRACTICE_API_TOKEN }}
   PRACTICE_API_URL: ${{ secrets.PRACTICE_API_URL }}
   INSTRUCTOR_ID: ${{ vars.INSTRUCTOR_ID }}
+  NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
 ```
 
-**Locally**, set the same three as environment variables in your shell
+**Locally**, set the same values as environment variables in your shell
 before running (PowerShell shown, same as Mini Project 1):
 
 ```powershell
 $env:PRACTICE_API_TOKEN = "your-token-here"
 $env:PRACTICE_API_URL = "https://practice.fhsucyber.com"
 $env:INSTRUCTOR_ID = "7"
+$env:NTFY_TOPIC = "your-private-topic-name"   # optional
 ```
 
-If any of the three are missing, `main.py` exits immediately with a message
-instead of making requests.
+If `PRACTICE_API_TOKEN`, `PRACTICE_API_URL`, or `INSTRUCTOR_ID` are missing,
+`main.py` exits immediately with a message instead of making requests.
+`NTFY_TOPIC` is optional - without it, notifications are simply skipped and
+everything else behaves the same.
+
+### Setting up push notifications (optional)
+
+1. Install the [ntfy app](https://ntfy.sh/) on your phone (iOS/Android).
+2. Pick a private topic name (any hard-to-guess string - anyone who knows
+   it can read your notifications, since ntfy.sh topics aren't secret by
+   nature, only obscure).
+3. In the app, subscribe to that topic.
+4. Add the same string as the `NTFY_TOPIC` repo secret.
+
+You'll then get a push notification whenever the bot successfully replies
+to a check-in, or hits a real failure trying to - and nothing otherwise.
 
 ## Running it
 

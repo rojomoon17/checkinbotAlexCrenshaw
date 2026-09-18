@@ -7,7 +7,10 @@ from datetime import datetime, timezone
 from practice_hub_client import CheckInWindowClosed
 
 
-def run_checkin(client, my_id, instructor_id):
+def run_checkin(client, my_id, instructor_id, notify=None):
+    if notify is None:
+        notify = lambda message: None
+
     posts = client.list_posts_by_author(instructor_id)
     checkins = [p for p in posts if "check-in" in p["title"].lower()]
 
@@ -28,12 +31,14 @@ def run_checkin(client, my_id, instructor_id):
             client.add_comment(post_id, f"Alex Crenshaw checking in - {timestamp}.")
             replied += 1
             print(f"  replied to check-in {post_id}: {post['title']!r}")
+            notify(f"Replied to check-in: {post['title']!r}")
         except CheckInWindowClosed:
             skipped_window_closed += 1
             print(f"  window closed for check-in {post_id}: {post['title']!r}")
         except Exception as err:
             failed += 1
             print(f"  ! failed to reply to check-in {post_id}: {err}")
+            notify(f"FAILED to reply to check-in {post_id} ({post['title']!r}): {err}")
 
     return {
         "checkins_found": len(checkins),

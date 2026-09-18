@@ -9,6 +9,7 @@ import requests
 from practice_hub_client import PracticeHubClient, PracticeHubError
 from collect import run_collect
 from checkin import run_checkin
+import notify
 
 ARTIFACT_DIR = "artifact"
 
@@ -17,6 +18,7 @@ def main():
     base_url = os.environ.get("PRACTICE_API_URL")
     token = os.environ.get("PRACTICE_API_TOKEN")
     instructor_id = os.environ.get("INSTRUCTOR_ID")
+    ntfy_topic = os.environ.get("NTFY_TOPIC")
 
     if not base_url or not token or not instructor_id:
         raise SystemExit(
@@ -39,7 +41,9 @@ def main():
         print(f"  {collect_summary}")
 
         print("Task 2: replying to open check-ins...")
-        checkin_summary = run_checkin(client, me["id"], instructor_id)
+        checkin_summary = run_checkin(
+            client, me["id"], instructor_id,
+            notify=lambda message: notify.send(ntfy_topic, message, title="Check-In Bot"))
         print(f"  {checkin_summary}")
     except PracticeHubError as err:
         raise SystemExit(f"Request failed - {err}")

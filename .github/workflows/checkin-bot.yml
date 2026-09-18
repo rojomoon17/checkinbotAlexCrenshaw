@@ -31,6 +31,7 @@ jobs:
           PRACTICE_API_TOKEN: ${{ secrets.PRACTICE_API_TOKEN }}
           PRACTICE_API_URL: ${{ secrets.PRACTICE_API_URL }}
           INSTRUCTOR_ID: ${{ vars.INSTRUCTOR_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python main.py
 
       - name: Commit artifact updates
