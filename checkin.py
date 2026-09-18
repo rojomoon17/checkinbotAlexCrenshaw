@@ -20,7 +20,7 @@ def run_checkin(client, my_id, instructor_id):
         post_id = post["id"]
         try:
             comments = client.list_comments(post_id)
-            if any(c.get("author_id") == my_id for c in comments):
+            if any(str(c.get("author_id")) == str(my_id) for c in comments):
                 skipped_already_replied += 1
                 continue
 

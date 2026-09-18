@@ -23,7 +23,11 @@ def main():
             "PRACTICE_API_URL, PRACTICE_API_TOKEN, and INSTRUCTOR_ID must all be "
             "set - see the README for how to configure them.")
 
-    instructor_id = int(instructor_id)
+    try:
+        instructor_id = int(instructor_id)
+    except ValueError:
+        raise SystemExit(f"INSTRUCTOR_ID must be an integer, got {instructor_id!r}.")
+
     client = PracticeHubClient(base_url, token)
 
     try:

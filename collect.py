@@ -6,6 +6,13 @@ import json
 import os
 
 
+def _safe_filename(name):
+    """Strip any directory components so a crafted filename (e.g.
+    "../../evil.txt") can't write outside the post's attachment folder."""
+    name = name.replace("\\", "/").rsplit("/", 1)[-1].replace("..", "_")
+    return name or "attachment"
+
+
 def run_collect(client, instructor_id, artifact_dir):
     posts = client.list_posts_by_author(instructor_id)
 
@@ -22,10 +29,16 @@ def run_collect(client, instructor_id, artifact_dir):
                 "updated_at": post.get("updated_at"),
                 "attachments": [],
             }
-            post_dir = os.path.join(artifact_dir, "files", str(post["id"]))
-            for attachment in post.get("attachments", []):
+        except Exception as err:
+            print(f"  ! failed to collect post {post.get('id')}: {err}")
+            continue
+
+        post_dir = os.path.join(artifact_dir, "files", str(post["id"]))
+        for attachment in post.get("attachments", []):
+            try:
                 os.makedirs(post_dir, exist_ok=True)
-                filename = f"{attachment['id']}_{attachment['filename']}"
+                safe_name = _safe_filename(attachment["filename"])
+                filename = f"{attachment['id']}_{safe_name}"
                 dest_path = os.path.join(post_dir, filename)
                 if not os.path.exists(dest_path):
                     client.download_attachment(attachment, dest_path)
@@ -36,9 +49,11 @@ def run_collect(client, instructor_id, artifact_dir):
                     "filename": attachment["filename"],
                     "local_path": local_path,
                 })
-            records.append(record)
-        except Exception as err:
-            print(f"  ! failed to collect post {post.get('id')}: {err}")
+            except Exception as err:
+                print(f"  ! failed to download attachment {attachment.get('id')} "
+                      f"on post {post.get('id')}: {err}")
+
+        records.append(record)
 
     os.makedirs(artifact_dir, exist_ok=True)
     collected_path = os.path.join(artifact_dir, "collected.json")
