@@ -132,12 +132,47 @@ already-answered check-ins are skipped rather than re-replied to.
 because the default `GITHUB_TOKEN` can read the repo but not push to it; the
 last step needs to commit `artifact/` back.
 
+## Tests
+
+`test_bot.py` is a `unittest` suite (no extra dependency - it only uses
+`unittest.mock` from the standard library) that exercises edge cases a
+handful of manual runs against the live API wouldn't reliably hit:
+pagination boundaries, every HTTP error status the client can get back
+(including a malformed/non-JSON error body), a crafted attachment filename
+(`../../evil.txt`) that must not be able to write outside its post's
+folder, one failed attachment/post not taking the rest of a batch down
+with it, the duplicate-reply guard (including an `author_id` type
+mismatch), the closed-window (`423`) path, and exactly which outcomes do
+and don't trigger a push notification.
+
+Writing it this way - fake, in-memory stand-ins for `PracticeHubClient`
+instead of hitting the real API - is what caught 4 real bugs during
+development that a live run against real data hadn't (a live run only
+ever exercises the data that happens to exist that day, not the edge
+cases): a failed attachment used to silently drop its whole post record,
+attachment filenames weren't sanitized against path traversal, the
+duplicate-reply check would have missed a string/int type mismatch, and a
+bad `INSTRUCTOR_ID` crashed with a raw traceback instead of a clean error.
+All four are fixed in the current code and now have a regression test.
+
+Run it with:
+
+```bash
+python -m unittest test_bot -v
+```
+
 ## Error handling
 
 `practice_hub_client.py`'s `_check()` helper replaces
 `response.raise_for_status()` and turns API errors into a readable
 `PracticeHubError` (or the more specific `CheckInWindowClosed` for a `423`).
+Every HTTP call also sets a 30-second timeout, so a hung connection fails
+fast instead of stalling a run for the workflow's full job timeout.
 `collect.py` and `checkin.py` each wrap their per-post work in `try`/`except`
 so one bad post or a closed check-in window doesn't stop the rest of the
-batch, and `main.py` has a top-level `try`/`except` so an unexpected error
-prints one line instead of a raw traceback.
+batch. `main.py` has a top-level `try`/`except` that catches
+`PracticeHubError` (API errors) and `requests.exceptions.RequestException`
+(network/timeout errors) and prints one line instead of a raw traceback for
+those specific cases - a genuinely unexpected bug elsewhere would still
+surface as a full traceback and a non-zero exit, which is intentional so it
+isn't silently swallowed.
