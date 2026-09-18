@@ -49,7 +49,7 @@ class PracticeHubClient:
             f"{status} error from the API: {detail or resp.text[:200]}")
 
     def me(self):
-        resp = requests.get(f"{self.base}/api/v1/me", headers=self.headers)
+        resp = requests.get(f"{self.base}/api/v1/me", headers=self.headers, timeout=30)
         self._check(resp)
         return resp.json()
 
@@ -61,6 +61,7 @@ class PracticeHubClient:
                 f"{self.base}/api/v1/posts",
                 headers=self.headers,
                 params={"author": author_id, "limit": limit, "offset": offset},
+                timeout=30,
             )
             self._check(resp)
             page = resp.json()
@@ -72,14 +73,14 @@ class PracticeHubClient:
 
     def list_comments(self, post_id):
         resp = requests.get(
-            f"{self.base}/api/v1/posts/{post_id}/comments", headers=self.headers)
+            f"{self.base}/api/v1/posts/{post_id}/comments", headers=self.headers, timeout=30)
         self._check(resp)
         return resp.json()
 
     def add_comment(self, post_id, body):
         resp = requests.post(
             f"{self.base}/api/v1/posts/{post_id}/comments",
-            headers=self.headers, json={"body": body})
+            headers=self.headers, json={"body": body}, timeout=30)
         self._check(resp)
         return resp.json()
 
@@ -87,7 +88,7 @@ class PracticeHubClient:
         url = attachment["download_url"]
         if not url.startswith("http"):
             url = f"{self.base}{url}"
-        resp = requests.get(url, headers=self.headers, stream=True)
+        resp = requests.get(url, headers=self.headers, stream=True, timeout=30)
         self._check(resp)
         with open(dest_path, "wb") as f:
             for chunk in resp.iter_content(chunk_size=8192):
