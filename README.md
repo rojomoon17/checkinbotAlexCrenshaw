@@ -6,7 +6,7 @@ Scheduled Check-In Bot - Alex Crenshaw
 ## What this project does
 
 A GitHub Actions workflow runs `main.py` on a cron schedule. Each run talks
-to the class **Practice Hub** API (`https://practice.fhsucyber.com`) as the
+to the class **Practice Hub** API (URL provided by the instructor) as the
 instructor's user id and does two things:
 
 1. **Collects everything the instructor posts** (`collect.py`) - every post's
@@ -48,7 +48,7 @@ any of them:
 | Name | Kind | Value |
 | --- | --- | --- |
 | `PRACTICE_API_TOKEN` | Secret | your Practice Hub API token |
-| `PRACTICE_API_URL` | Secret | `https://practice.fhsucyber.com` |
+| `PRACTICE_API_URL` | Secret | `<your Practice Hub URL>` |
 | `INSTRUCTOR_ID` | Variable | the instructor's Practice Hub user id |
 | `NTFY_TOPIC` | Secret (optional) | a private [ntfy.sh](https://ntfy.sh) topic name for push notifications |
 
@@ -70,7 +70,7 @@ before running (PowerShell shown, same as Mini Project 1):
 
 ```powershell
 $env:PRACTICE_API_TOKEN = "your-token-here"
-$env:PRACTICE_API_URL = "https://practice.fhsucyber.com"
+$env:PRACTICE_API_URL = "<your Practice Hub URL>"
 $env:INSTRUCTOR_ID = "7"
 $env:NTFY_TOPIC = "your-private-topic-name"   # optional
 ```
