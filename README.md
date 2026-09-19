@@ -176,3 +176,72 @@ batch. `main.py` has a top-level `try`/`except` that catches
 those specific cases - a genuinely unexpected bug elsewhere would still
 surface as a full traceback and a non-zero exit, which is intentional so it
 isn't silently swallowed.
+
+## AI Usage
+
+### What Claude Code did
+
+I used Claude Code (Anthropic's CLI) to build this project, working from
+Mini Project 1's `client.py` as the starting pattern.
+
+- **Researched the real API shape** before writing anything, by fetching
+  `practice.fhsucyber.com/openapi.json` directly, since Mini Project 1 only
+  used the plain CRUD endpoints and never needed pagination, attachments,
+  or comments. That's where the `author`/`limit`/`offset` pagination
+  params, the embedded `attachments[]` on each post, the comments
+  endpoints, and the fact that the server enforces the check-in window
+  itself (so a `423` can just be handled, never parsed from a title) all
+  came from.
+- **Wrote every `.py` file**: `practice_hub_client.py` (extending Mini
+  Project 1's client with `me()`, paginated `list_posts_by_author()`,
+  comments, and streaming attachment downloads), `collect.py` (Task 1),
+  `checkin.py` (Task 2), `main.py` (entry point), `notify.py` (optional
+  ntfy.sh push notifications), and `test_bot.py` (the mock-based test
+  suite).
+- **Wrote the GitHub Actions workflow** (`checkin-bot.yml`) - the cron
+  schedule, `workflow_dispatch`, `permissions: contents: write`, and the
+  commit-back step.
+- **Diagnosed and fixed a local-machine-only SSL failure** during
+  development (Avast's HTTPS-scanning proxy injects a root certificate
+  that Python's `certifi` bundle doesn't trust, even though `curl` trusts
+  it via the Windows certificate store) and built a temporary local CA
+  bundle to test against the live API with - this only ever affected
+  testing on this one machine and isn't part of the deployed bot or its
+  dependencies.
+- **Ran the bot against the live Practice Hub API repeatedly** throughout
+  development and after every change: verified Task 1's collected
+  bodies/attachments byte-for-byte against fresh re-downloads, verified
+  Task 2's duplicate-reply guard by running it twice in a row, and
+  re-verified the full bot end-to-end after every later change (timeouts,
+  notifications) to confirm identical output and no unintended `artifact/`
+  diff.
+- **Wrote a mock-based test harness** (no live API calls) specifically to
+  stress-test edge cases a handful of manual runs against real data
+  wouldn't reliably hit - pagination boundaries, every HTTP error status
+  including malformed/non-JSON bodies, and per-post/per-attachment failure
+  isolation. This found 4 real bugs, which Claude Code then fixed: a
+  failed attachment download used to silently drop its whole post record
+  (title/body/tags/other attachments, not just the one file) instead of
+  just skipping that attachment; attachment filenames were used
+  unsanitized, so a crafted filename containing `../` could write outside
+  `artifact/files/<post_id>/`; the duplicate-reply check compared
+  `author_id` with `==`, which would miss a match (and cause a real
+  duplicate reply) if the API ever returned it as a string instead of an
+  int; and a non-numeric `INSTRUCTOR_ID` crashed with a raw `ValueError`
+  traceback instead of the same clean error message used for other
+  misconfiguration. All four fixes were re-verified against the live API
+  afterward to confirm no behavior changed for real data, then that mock
+  harness was cleaned up and committed as `test_bot.py`.
+- **Found and fixed a missing-timeout gap**: none of `practice_hub_client.py`'s
+  HTTP calls set a `timeout`, so a hung connection could stall a run for
+  the workflow's full job timeout instead of failing fast. Added
+  `timeout=30` to all five calls and re-verified against the live API.
+- **Verified real scheduled runs on GitHub's own runner**, not just local
+  runs: checked run/job status via GitHub's REST API after each real
+  cron firing, including one that GitHub itself delayed by roughly 2.5
+  hours from its scheduled time (a documented GitHub Actions behavior for
+  top-of-the-hour schedules) - confirmed the duplicate-reply guard still
+  correctly prevented a second reply on that delayed run.
+- **Wrote this README**, including documenting the secrets/variables
+  table, the cron schedule's reasoning, the optional push-notification
+  setup, and this AI Usage section.
