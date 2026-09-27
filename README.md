@@ -199,3 +199,12 @@ isn't silently swallowed.
 - Verified real scheduled runs on GitHub's own runner via its REST API,
   including one run GitHub itself delayed by ~2.5 hours.
 - Wrote this README.
+
+### What I Changed
+
+- The reply message.
+- Prompted for the testing harness which detected the bugs and then fixed them.
+- A notification system through ntfy using Claude code.
+- Had the test bot added to the github for posterity.
+- Adjusted error handling based on the test bot and live tests.
+- Added this section to the Readme by hand.
