@@ -203,7 +203,7 @@ isn't silently swallowed.
 ### What I Changed
 
 - The reply message.
-- Prompted for the testing harness which detected the bugs and then fixed them.
+- Prompted for the testing harness which detected the bugs outlined above and then fixed them.
 - A notification system through ntfy using Claude code.
 - Had the test bot added to the github for posterity.
 - Adjusted error handling based on the test bot and live tests.
